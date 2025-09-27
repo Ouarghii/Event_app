@@ -112,11 +112,17 @@ app.post("/logout", (req, res) => {
    res.cookie("token", "").json(true);
 });
 
+<<<<<<< HEAD
 // Updated Event Schema with Category
 const eventSchema = new mongoose.Schema({
    owner: String,
    title: String,
    optional: String,
+=======
+const eventSchema = new mongoose.Schema({
+   owner: String,
+   title: String,
+>>>>>>> upstream/main
    description: String,
    organizedBy: String,
    eventDate: Date,
@@ -130,6 +136,7 @@ const eventSchema = new mongoose.Schema({
    image: String,
    likes: Number,
    Comment: [String],
+<<<<<<< HEAD
    category: {
       type: String,
       required: true,
@@ -143,6 +150,8 @@ const eventSchema = new mongoose.Schema({
          'Research & Global Tech Trends'
       ]
    }
+=======
+>>>>>>> upstream/main
 });
 
 const Event = mongoose.model("Event", eventSchema);
@@ -168,6 +177,7 @@ app.get("/createEvent", async (req, res) => {
    }
 });
 
+<<<<<<< HEAD
 // Get events by category
 app.get("/events/category/:category", async (req, res) => {
    try {
@@ -204,6 +214,8 @@ app.get("/events", async (req, res) => {
    }
 });
 
+=======
+>>>>>>> upstream/main
 app.get("/event/:id", async (req, res) => {
    const { id } = req.params;
    try {
@@ -235,6 +247,20 @@ app.post("/event/:eventId", (req, res) => {
       });
 });
 
+<<<<<<< HEAD
+=======
+app.get("/events", (req, res) => {
+   Event.find()
+      .then((events) => {
+         res.json(events);
+      })
+      .catch((error) => {
+         console.error("Error fetching events:", error);
+         res.status(500).json({ message: "Server error" });
+      });
+});
+
+>>>>>>> upstream/main
 app.get("/event/:id/ordersummary", async (req, res) => {
    const { id } = req.params;
    try {
@@ -305,6 +331,7 @@ const PORT = process.env.PORT || 4000;
 app.listen(PORT, () => {
    console.log(`Server is running on port ${PORT}`);
 });
+<<<<<<< HEAD
 
 
 app.get("/events/category/:category", async (req, res) => {
@@ -316,3 +343,5 @@ app.get("/events/category/:category", async (req, res) => {
       res.status(500).json({ error: "Failed to fetch events by category" });
    }
 });
+=======
+>>>>>>> upstream/main

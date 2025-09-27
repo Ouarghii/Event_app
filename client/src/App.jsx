@@ -17,7 +17,11 @@ import OrderSummary from './pages/OrderSummary'
 import PaymentSummary from './pages/PaymentSummary'
 import TicketPage from './pages/TicketPage'
 import CreatEvent from './pages/CreateEvent'
+<<<<<<< HEAD
 import Categories from './pages/categories'
+=======
+
+>>>>>>> upstream/main
 axios.defaults.baseURL = 'http://localhost:4000/';
 axios.defaults.withCredentials=true;
 
@@ -35,15 +39,22 @@ function App() {
         <Route path='/wallet' element={<TicketPage />}/>
         <Route path='/event/:id/ordersummary' element = {<OrderSummary />} />
         <Route path='/event/:id/ordersummary/paymentsummary' element = {<PaymentSummary />} />
+<<<<<<< HEAD
         
+=======
+>>>>>>> upstream/main
       </Route>
 
       <Route path='/register' element={<RegisterPage />}/>
       <Route path='/login' element={<LoginPage />}/>
       <Route path='/forgotpassword' element = {<ForgotPassword/>} />
       <Route path='/resetpassword' element = {<ResetPassword/>} />
+<<<<<<< HEAD
       <Route path="/categories" element={<Categories />} />
     
+=======
+      
+>>>>>>> upstream/main
       
     
     </Routes>
