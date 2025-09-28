@@ -16,7 +16,7 @@ import CalendarView from './pages/CalendarView'
 import OrderSummary from './pages/OrderSummary'
 import PaymentSummary from './pages/PaymentSummary'
 import TicketPage from './pages/TicketPage'
-import CreatEvent from './pages/CreateEvent'
+import Categories from './pages/categories'
 
 axios.defaults.baseURL = 'http://localhost:4000/';
 axios.defaults.withCredentials=true;
@@ -35,6 +35,7 @@ function App() {
         <Route path='/wallet' element={<TicketPage />}/>
         <Route path='/event/:id/ordersummary' element = {<OrderSummary />} />
         <Route path='/event/:id/ordersummary/paymentsummary' element = {<PaymentSummary />} />
+        <Route path="/categories" element={<Categories />} />
       </Route>
 
       <Route path='/register' element={<RegisterPage />}/>
