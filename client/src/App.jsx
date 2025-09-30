@@ -17,6 +17,15 @@ import OrderSummary from './pages/OrderSummary'
 import PaymentSummary from './pages/PaymentSummary'
 import TicketPage from './pages/TicketPage'
 import CreatEvent from './pages/CreateEvent'
+import RoleSelectionPage from "./pages/RoleSelectionPage";
+import ContributorRegisterPage from './pages/ContributorRegisterPage';
+import ContributorLoginPage from './pages/ContributorLoginPage';
+import AdminRegisterPage from './pages/AdminRegisterPage';
+import AdminLoginPage from './pages/AdminLoginPage';
+import Categories from './pages/categories'
+import ProtectedRoute from './ProtectedRoute'; 
+import AdminDashboard from './pages/AdminDashboard'; 
+
 
 axios.defaults.baseURL = 'http://localhost:4000/';
 axios.defaults.withCredentials=true;
@@ -29,18 +38,32 @@ function App() {
       <Route path='/' element={<Layout />}>
         <Route index element = {<IndexPage />} />
         <Route path='/useraccount' element = {<UserAccountPage />}/>
-        <Route path='/createEvent' element = {<AddEvent/>} />
+        <Route element={<ProtectedRoute allowedRoles={['contributor', 'admin']} />}>
+            <Route path='/createEvent' element = {<AddEvent/>} />
+        </Route>
+        <Route path="/admin/dashboard" element={<AdminDashboard />} />
         <Route path='/event/:id' element= {<EventPage/>} />
         <Route path='/calendar' element={<CalendarView />} />
         <Route path='/wallet' element={<TicketPage />}/>
         <Route path='/event/:id/ordersummary' element = {<OrderSummary />} />
         <Route path='/event/:id/ordersummary/paymentsummary' element = {<PaymentSummary />} />
+        <Route path="/select-role" element={<RoleSelectionPage />} /> 
+        <Route path="/categories" element={<Categories />} />
+
       </Route>
 
       <Route path='/register' element={<RegisterPage />}/>
       <Route path='/login' element={<LoginPage />}/>
       <Route path='/forgotpassword' element = {<ForgotPassword/>} />
       <Route path='/resetpassword' element = {<ResetPassword/>} />
+          {/* 🟢 NEW CONTRIBUTOR ROUTES */}
+        <Route path="/contributor/register" element={<ContributorRegisterPage />} />
+        <Route path="/contributor/login" element={<ContributorLoginPage />} />
+
+        {/* 🟢 NEW ADMIN ROUTES */}
+        <Route path="/admin/register" element={<AdminRegisterPage />} />
+        <Route path="/admin/login" element={<AdminLoginPage />} />
+
       
       
     

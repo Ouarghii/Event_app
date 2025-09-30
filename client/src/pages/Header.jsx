@@ -85,7 +85,7 @@ export default function Header() {
       {/* Right: User / Auth */}
       <div className="flex items-center gap-4">
         {!user && (
-          <Link to="/login">
+          <Link to="/select-role">
             <button className="bg-yellow-500 text-black font-semibold px-4 py-2 rounded hover:bg-yellow-400">Sign in</button>
           </Link>
         )}
