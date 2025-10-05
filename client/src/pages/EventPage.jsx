@@ -48,9 +48,14 @@ export default function EventPage() {
         {event.image && (
           <div className="rounded-xl overflow-hidden mb-8 shadow-xl transform transition-transform duration-300 hover:scale-[1.01]">
             <img 
-              src={`http://localhost:4000/api/${event.image}`} 
+              // 🟢 FIX: Remove "/api/" from the image URL
+              src={`http://localhost:4000${event.image}`} 
               alt={event.title} 
               className="w-full h-80 md:h-[500px] object-cover" 
+              onError={(e) => {
+                console.error('Image failed to load:', event.image);
+                e.target.style.display = 'none';
+              }}
             />
           </div>
         )}
@@ -59,10 +64,10 @@ export default function EventPage() {
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 border-b border-gray-700 pb-6 animate-slide-in-up">
           <div className="flex-grow">
             <h1 className="text-4xl md:text-6xl font-extrabold text-yellow-400 tracking-wide glow-text mb-2">
-              {event.title.toUpperCase()}
+              {event.title ? event.title.toUpperCase() : 'Untitled Event'}
             </h1>
             <p className="text-lg text-gray-400 font-medium">
-              <span className="text-white">Organized By:</span> {event.organizedBy}
+              <span className="text-white">Organized By:</span> {event.organizedBy || 'Unknown'}
             </p>
           </div>
           <Link to={`/event/${event._id}/ordersummary`} className="mt-4 md:mt-0 md:ml-6">
@@ -79,7 +84,7 @@ export default function EventPage() {
           <div className="lg:col-span-2 space-y-6">
             <div>
               <h2 className="text-xl md:text-2xl font-bold mb-3">Event Details</h2>
-              <p className="text-gray-300 leading-relaxed">{event.description}</p>
+              <p className="text-gray-300 leading-relaxed">{event.description || 'No description available.'}</p>
             </div>
             
             {/* When and Where Section */}
@@ -93,10 +98,10 @@ export default function EventPage() {
                   <div>
                     <h3 className="font-bold text-lg mb-1">Date & Time</h3>
                     <p className="text-gray-300">
-                      Date: <span className="font-semibold">{event.eventDate.split("T")[0]}</span>
+                      Date: <span className="font-semibold">{event.eventDate ? event.eventDate.split("T")[0] : 'TBA'}</span>
                     </p>
                     <p className="text-gray-300">
-                      Time: <span className="font-semibold">{event.eventTime}</span>
+                      Time: <span className="font-semibold">{event.eventTime || 'TBA'}</span>
                     </p>
                   </div>
                 </div>
@@ -106,7 +111,7 @@ export default function EventPage() {
                   </div>
                   <div>
                     <h3 className="font-bold text-lg mb-1">Location</h3>
-                    <p className="text-gray-300 font-semibold">{event.location}</p>
+                    <p className="text-gray-300 font-semibold">{event.location || 'Location TBA'}</p>
                   </div>
                 </div>
               </div>
@@ -119,7 +124,7 @@ export default function EventPage() {
             <div className="bg-gray-800 p-6 rounded-lg shadow-inner border border-gray-700 text-center">
               <h3 className="text-lg md:text-xl font-bold text-gray-400 mb-2">Ticket Price</h3>
               <div className="text-4xl font-extrabold text-yellow-400">
-                {event.ticketPrice === 0 ? 'FREE' : ` ${event.ticketPrice} TND`}
+                {event.ticketPrice === 0 || !event.ticketPrice ? 'FREE' : ` ${event.ticketPrice} TND`}
               </div>
             </div>
             

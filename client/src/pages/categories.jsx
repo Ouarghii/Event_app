@@ -138,6 +138,22 @@ export default function Categories() {
     return timeString.replace(/:00$/, '');
   };
 
+  // 🟢 FIX: Helper function to get correct image URL
+  const getImageUrl = (imagePath) => {
+    if (!imagePath) return 'https://via.placeholder.com/300x200/1f2937/6b7280?text=No+Image';
+    
+    // 🟢 FIX: Construct proper image URL
+    if (imagePath.startsWith('http')) {
+      return imagePath; // Already a full URL
+    } else if (imagePath.startsWith('/uploads/')) {
+      return `http://localhost:4000${imagePath}`;
+    } else if (imagePath.startsWith('uploads/')) {
+      return `http://localhost:4000/${imagePath}`;
+    } else {
+      return `http://localhost:4000/uploads/${imagePath}`;
+    }
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen bg-gray-950 text-white">
@@ -307,7 +323,8 @@ export default function Categories() {
                         <div className="bg-gray-800 rounded-lg overflow-hidden hover:bg-gray-700 transition-all duration-300 transform group-hover:scale-105 border border-gray-700 group-hover:border-yellow-500/50 h-full flex flex-col">
                           <div className="relative h-40 overflow-hidden flex-shrink-0">
                             <img 
-                              src={event.image || 'https://via.placeholder.com/300x200/1f2937/6b7280?text=No+Image'} 
+                              // 🟢 FIX: Use the helper function to get correct image URL
+                              src={getImageUrl(event.image)} 
                               alt={event.title}
                               className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-110"
                               onError={(e) => {
