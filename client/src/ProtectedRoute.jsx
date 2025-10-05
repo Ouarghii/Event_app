@@ -1,34 +1,37 @@
 // src/ProtectedRoute.jsx
 /* eslint-disable react/prop-types */
 import React, { useContext } from 'react';
-import { Navigate, Outlet } from 'react-router-dom';
-import { UserContext } from './UserContext'; // Assurez-vous que le chemin est correct
+import { Navigate, useLocation } from 'react-router-dom';
+import { UserContext } from './UserContext';
 
-export default function ProtectedRoute({ allowedRoles = [] }) {
+export default function ProtectedRoute({ children, allowedRoles = [] }) {
     const { user, loading } = useContext(UserContext);
+    const location = useLocation();
 
-    // Si le chargement est en cours, vous pouvez retourner un loader ou null
+    // Show loading state
     if (loading) {
-        return <div>Loading...</div>; // ⬅️ Vous pouvez remplacer ceci par un vrai loader
+        return (
+            <div className="min-h-screen bg-gray-950 flex items-center justify-center">
+                <div className="text-white text-xl">Loading...</div>
+            </div>
+        );
     }
 
-    // 1. L'utilisateur est-il connecté ?
+    // User is not logged in - redirect to role selection with intended destination
     if (!user) {
-        // Non, rediriger vers la page de sélection de rôle ou de connexion
-        return <Navigate to="/select-role" replace />;
+        return <Navigate to="/select-role" state={{ from: location }} replace />;
     }
 
-    // 2. L'utilisateur a-t-il le bon rôle ?
-    // Vérifie si le rôle de l'utilisateur est dans le tableau des rôles autorisés
-    // Le rôle par défaut est 'user' si non spécifié dans le token (régulier /profile)
-    const userRole = user.role || 'user'; 
-
-    if (allowedRoles.includes(userRole)) {
-        // Oui, afficher le contenu de la route
-        return <Outlet />;
-    } else {
-        // Rôle non autorisé, rediriger vers la page d'accueil
-        // Vous pouvez ajouter une logique pour afficher un message d'erreur si vous voulez
-        return <Navigate to="/" replace />;
+    // Check roles if specific roles are required
+    if (allowedRoles.length > 0) {
+        const userRole = user.role || 'user';
+        
+        if (!allowedRoles.includes(userRole)) {
+            // Role not allowed - redirect to home or unauthorized page
+            return <Navigate to="/" replace />;
+        }
     }
+
+    // User is logged in (and has required role if specified) - render children
+    return children;
 }

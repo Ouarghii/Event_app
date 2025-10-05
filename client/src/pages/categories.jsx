@@ -1,7 +1,8 @@
-import { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import { useState, useEffect, useContext } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import logo from '../assets/logo.png';
+import { UserContext } from '../UserContext';
 
 export default function Categories() {
   const [categories, setCategories] = useState([]);
@@ -10,6 +11,9 @@ export default function Categories() {
   const [selectedCategory, setSelectedCategory] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  
+  const { user } = useContext(UserContext);
+  const navigate = useNavigate();
 
   const categoryConfig = [
     { value: 'Community', label: 'Community', icon: '👥' },
@@ -20,6 +24,26 @@ export default function Categories() {
     { value: 'Enterprise IT & Education', label: 'Enterprise IT & Education', icon: '💼' },
     { value: 'Research & Global Tech Trends', label: 'Research & Global Tech Trends', icon: '🔬' }
   ];
+
+  // Handle Create Event click with role-based routing
+  const handleCreateEventClick = (e) => {
+    e.preventDefault();
+    
+    if (user && (user.role === 'admin' || user.role === 'contributor')) {
+      navigate('/createEvent');
+    } else if (user) {
+      // User is logged in but doesn't have permission
+      alert('Only admins and contributors can create events');
+    } else {
+      // User is not logged in
+      navigate('/select-role', { 
+        state: { 
+          from: '/createEvent',
+          context: 'create-event' 
+        } 
+      });
+    }
+  };
 
   useEffect(() => {
     const initializeCategories = async () => {
@@ -81,7 +105,6 @@ export default function Categories() {
     }
   };
 
-  // Rest of your component remains the same...
   const getCategoryLabel = (categoryValue) => {
     const category = categoryConfig.find(cat => cat.value === categoryValue);
     return category ? category.label : categoryValue;
@@ -125,7 +148,13 @@ export default function Categories() {
               <Link className="px-4 py-2 hover:bg-gray-100 rounded" to="/">Actuality</Link>
               <Link className="px-4 py-2 hover:bg-gray-100 rounded" to="/categories">Categories</Link>
               <Link className="px-4 py-2 hover:bg-gray-100 rounded" to="/profile">Profil</Link>
-              <Link className="px-4 py-2 hover:bg-gray-100 rounded" to="/createEvent">Create Event</Link>
+              {/* Updated Create Event button in loading state */}
+              <button 
+                onClick={handleCreateEventClick}
+                className="px-4 py-2 hover:bg-gray-100 rounded text-yellow-500 font-semibold"
+              >
+                Create Event
+              </button>
               <Link className="px-4 py-2 hover:bg-gray-100 rounded" to="/wallet">Wallet</Link>
               <Link className="px-4 py-2 hover:bg-gray-100 rounded" to="/verification">Center</Link>
               <Link className="px-4 py-2 hover:bg-gray-100 rounded" to="/calendar">Calendar</Link>
@@ -148,7 +177,13 @@ export default function Categories() {
             <Link className="px-4 py-2 hover:bg-gray-100 rounded" to="/">Actuality</Link>
             <Link className="px-4 py-2 hover:bg-gray-100 rounded" to="/categories">Categories</Link>
             <Link className="px-4 py-2 hover:bg-gray-100 rounded" to="/profile">Profil</Link>
-            <Link className="px-4 py-2 hover:bg-gray-100 rounded" to="/createEvent">Create Event</Link>
+            {/* Updated Create Event button in main navigation */}
+            <button 
+              onClick={handleCreateEventClick}
+              className="px-4 py-2 hover:bg-gray-100 rounded text-yellow-500 font-semibold"
+            >
+              Create Event
+            </button>
             <Link className="px-4 py-2 hover:bg-gray-100 rounded" to="/wallet">Wallet</Link>
             <Link className="px-4 py-2 hover:bg-gray-100 rounded" to="/verification">Center</Link>
             <Link className="px-4 py-2 hover:bg-gray-100 rounded" to="/calendar">Calendar</Link>
@@ -335,12 +370,13 @@ export default function Categories() {
                     <div className="text-5xl mb-3">📅</div>
                     <h3 className="text-xl font-bold mb-2">No events yet</h3>
                     <p className="text-gray-400 mb-4 text-sm">Be the first to create an event in this category!</p>
-                    <Link 
-                      to="/createEvent" 
+                    {/* Updated empty state Create Event button */}
+                    <button 
+                      onClick={handleCreateEventClick}
                       className="inline-flex items-center gap-2 bg-yellow-500 text-gray-900 px-4 py-2 rounded-lg hover:bg-yellow-400 transition-colors font-semibold text-sm"
                     >
                       <span>+</span> Create First Event
-                    </Link>
+                    </button>
                   </div>
                 )}
               </div>

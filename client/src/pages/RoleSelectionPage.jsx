@@ -1,4 +1,4 @@
-import { Link } from "react-router-dom";
+import { Link, useLocation } from "react-router-dom";
 import { FaUserShield, FaUserPlus, FaUser } from "react-icons/fa";
 import { BsArrowRightShort } from "react-icons/bs";
 
@@ -10,7 +10,6 @@ const roles = [
     icon: FaUserShield,
     color: "text-red-500",
     shadow: "shadow-red-900/50",
-    // 🟢 ADDED: base path for routing
     path: "admin", 
   },
   {
@@ -19,7 +18,6 @@ const roles = [
     icon: FaUserPlus,
     color: "text-yellow-500",
     shadow: "shadow-yellow-900/50",
-    // 🟢 ADDED: base path for routing
     path: "contributor", 
   },
   {
@@ -28,12 +26,16 @@ const roles = [
     icon: FaUser,
     color: "text-blue-500",
     shadow: "shadow-blue-900/50",
-    // 🟢 ADDED: base path for routing
     path: "", // User uses the root /login and /register paths
   },
 ];
 
 export default function RoleSelectionPage() {
+  const location = useLocation();
+  
+  // Get the intended destination from ProtectedRoute
+  const from = location.state?.from?.pathname || '/';
+
   return (
     <div className="min-h-screen bg-gray-950 text-white flex flex-col items-center justify-center p-8">
       
@@ -45,19 +47,26 @@ export default function RoleSelectionPage() {
         Select the role that best describes you to proceed to sign in or registration.
       </p>
 
+      {/* Show where user will be redirected after login */}
+      {from !== '/' && (
+        <div className="mb-6 p-4 bg-gray-800 rounded-lg border border-yellow-500/50">
+          <p className="text-yellow-400 text-sm">
+            After logging in, you'll be redirected to: <span className="font-mono">{from}</span>
+          </p>
+        </div>
+      )}
+
       {/* Roles Grid */}
       <div className="grid gap-8 md:grid-cols-3 max-w-6xl w-full">
         {roles.map((role) => {
-            // 🟢 DYNAMIC PATH CALCULATION
-            // Example: "contributor" -> "/contributor/login"
-            // Example: "" (User) -> "/login"
+            // Dynamic path calculation
             const loginPath = role.path ? `/${role.path}/login` : '/login';
 
             return (
               <Link 
                 key={role.name}
-                // 🟢 UPDATED: Use the dynamically generated loginPath
-                to={loginPath} 
+                to={loginPath}
+                state={{ from }} // Pass the redirect destination to login page
                 className={`
                   relative bg-gray-900 rounded-xl p-6 md:p-8 
                   flex flex-col items-center text-center 
@@ -91,6 +100,15 @@ export default function RoleSelectionPage() {
             );
         })}
       </div>
+
+      {/* Additional info for contributors wanting to create events */}
+      {from === '/createEvent' && (
+        <div className="mt-8 p-4 bg-yellow-500/10 border border-yellow-500 rounded-lg max-w-2xl">
+          <p className="text-yellow-400 text-sm text-center">
+            💡 <strong>Want to create events?</strong> Select "Contributor" to register as an event organizer.
+          </p>
+        </div>
+      )}
     </div>
   );
 }

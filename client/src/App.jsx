@@ -38,10 +38,27 @@ function App() {
       <Route path='/' element={<Layout />}>
         <Route index element = {<IndexPage />} />
         <Route path='/useraccount' element = {<UserAccountPage />}/>
-        <Route element={<ProtectedRoute allowedRoles={['contributor', 'admin']} />}>
-            <Route path='/createEvent' element = {<AddEvent/>} />
-        </Route>
-        <Route path="/admin/dashboard" element={<AdminDashboard />} />
+        
+        {/* Only Admin and Contributor can create events */}
+        <Route 
+          path='/createEvent' 
+          element={
+            <ProtectedRoute allowedRoles={['admin', 'contributor']}>
+              <AddEvent/>
+            </ProtectedRoute>
+          } 
+        />
+        
+        {/* Admin Dashboard - Only accessible by admin */}
+        <Route 
+          path="/admin/dashboard" 
+          element={
+            <ProtectedRoute allowedRoles={['admin']}>
+              <AdminDashboard />
+            </ProtectedRoute>
+          } 
+        />
+        
         <Route path='/event/:id' element= {<EventPage/>} />
         <Route path='/calendar' element={<CalendarView />} />
         <Route path='/wallet' element={<TicketPage />}/>
@@ -56,16 +73,14 @@ function App() {
       <Route path='/login' element={<LoginPage />}/>
       <Route path='/forgotpassword' element = {<ForgotPassword/>} />
       <Route path='/resetpassword' element = {<ResetPassword/>} />
-          {/* 🟢 NEW CONTRIBUTOR ROUTES */}
-        <Route path="/contributor/register" element={<ContributorRegisterPage />} />
-        <Route path="/contributor/login" element={<ContributorLoginPage />} />
-
-        {/* 🟢 NEW ADMIN ROUTES */}
-        <Route path="/admin/register" element={<AdminRegisterPage />} />
-        <Route path="/admin/login" element={<AdminLoginPage />} />
-
       
-      
+      {/* Contributor Routes */}
+      <Route path="/contributor/register" element={<ContributorRegisterPage />} />
+      <Route path="/contributor/login" element={<ContributorLoginPage />} />
+
+      {/* Admin Routes */}
+      <Route path="/admin/register" element={<AdminRegisterPage />} />
+      <Route path="/admin/login" element={<AdminLoginPage />} />
     
     </Routes>
     </UserContextProvider>  
