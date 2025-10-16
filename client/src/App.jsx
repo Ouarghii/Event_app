@@ -25,6 +25,7 @@ import AdminLoginPage from './pages/AdminLoginPage';
 import Categories from './pages/categories'
 import ProtectedRoute from './ProtectedRoute'; 
 import AdminDashboard from './pages/AdminDashboard'; 
+import ProfilePage from './pages/ProfilePage'
 
 
 axios.defaults.baseURL = 'http://localhost:4000/';
@@ -49,6 +50,7 @@ function App() {
         <Route path='/event/:id/ordersummary/paymentsummary' element = {<PaymentSummary />} />
         <Route path="/select-role" element={<RoleSelectionPage />} /> 
         <Route path="/categories" element={<Categories />} />
+        <Route path="/profile" element={<ProfilePage />} />
 
       </Route>
 
