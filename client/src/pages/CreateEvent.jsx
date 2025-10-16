@@ -1,419 +1,275 @@
-import { useState } from "react";
+import { useContext, useState } from 'react';
+import axios from 'axios';
+import { UserContext } from '../UserContext';
+import logo from '../assets/logo.png';
 
-export default function CreatEvent() {
-  // Define state to manage the table data for the first table
-  const [tableData1, setTableData1] = useState([
-    { description: '', price: '', reference: '' },
-  ]);
+export default function AddEvent() {
+  const { user } = useContext(UserContext);
+  const [formData, setFormData] = useState({
+    owner: user ? user.name : "",
+    title: "",
+    optional: "",
+    description: "",
+    organizedBy: "",
+    eventDate: "",
+    eventTime: "",
+    location: "",
+    ticketPrice: 0,
+    category: ""
+  });
+  const [image, setImage] = useState(null);
+  const [loading, setLoading] = useState(false);
+  const [message, setMessage] = useState('');
 
-  // Define state to manage the table data for the second table
-  const [tableData2, setTableData2] = useState([
-    { description: '', price: '', reference: '' },
-  ]);
+  // Category configuration
+  const categories = [
+    { value: 'Community', label: 'Community' },
+    { value: 'Networking & Development', label: 'Networking & Development' },
+    { value: 'Engineering & Business', label: 'Engineering & Business' },
+    { value: 'Innovation & Cybersecurity', label: 'Innovation & Cybersecurity' },
+    { value: 'Compliance & Emerging Technologies & Corporate', label: 'Compliance & Emerging Technologies & Corporate' },
+    { value: 'Enterprise IT & Education', label: 'Enterprise IT & Education' },
+    { value: 'Research & Global Tech Trends', label: 'Research & Global Tech Trends' }
+  ];
 
-  // Function to add a new row to the first table
-  const addRow1 = () => {
-    setTableData1([...tableData1, { description: '', price: '', reference: '' }]);
+  const handleImageUpload = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      setImage(file);
+    }
   };
 
-  // Function to add a new row to the second table
-  const addRow2 = () => {
-    setTableData2([...tableData2, { description: '', price: '', reference: '' }]);
+  const handleChange = (e) => {
+    const { name, value } = e.target;
+    setFormData((prevState) => ({ 
+      ...prevState, 
+      [name]: name === 'ticketPrice' ? parseFloat(value) || 0 : value 
+    }));
   };
 
-    return (
-      <>
-<hr></hr>
-<br></br>
-<div className="flex justify-around ">
-  <div className="grid md:grid-cols-2 md:gap-6"></div>
-<ul className="flex justify-end">
-  <li className="mr-3">
-    <a className="inline-block border border-blue-500 rounded py-1 px-3 bg-blue-500 text-white align-right" href="#">Approve</a>
-  </li>
-  <li className="mr-3">
-    <a className="inline-block border rounded py-1 px-3 bg-gray-300 text-black align-right" href="#">Back</a>
-  </li>
-</ul>
-</div>
-<br/>
-<form>
-<div className="px-2">
-  <div className="flex justify-evenly">
-  <div className="flex w-2/3 ">
-    <h1>Basic Information</h1>
-  </div>
-  </div><br></br>
-      <div className="flex justify-around">
-      <div className="grid md:grid-cols-2 md:gap-6">
-        <div className="relative z-0 w-2/3 px-1 mb-8 group">
-          <input type="text" name="floating_first_name" id="floating_first_name" className="block py-2.5 px-0 w-96 text-sm text-gray-900 bg-transparent border-0 border-b-2 border-gray-300 appearance-none dark:text-white dark:border-gray-600 dark:focus:border-blue-500 focus:outline-none focus:ring-0 focus:border-blue-600 peer" placeholder=" " required />
-          <label for="floating_first_name" className="peer-focus:font-medium absolute text-sm text-gray-500 dark:text-gray-400 duration-300 transform -translate-y-6 scale-75 top-3 -z-10 origin-[0] peer-focus:left-0 peer-focus:text-blue-600 peer-focus:dark:text-blue-500 peer-placeholder-shown:scale-100 peer-placeholder-shown:translate-y-0 peer-focus:scale-75 peer-focus:-translate-y-6">Event Title :</label>
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setLoading(true);
+    setMessage('');
+
+    try {
+      // Create FormData for file upload
+      const submitData = new FormData();
+      
+      // Append all form fields
+      Object.keys(formData).forEach(key => {
+        if (formData[key] !== null && formData[key] !== undefined) {
+          submitData.append(key, formData[key]);
+        }
+      });
+
+      // Append image file if exists
+      if (image) {
+        submitData.append('image', image);
+      }
+
+      // Validate required fields
+      if (!formData.title || !formData.category || !formData.eventDate) {
+        setMessage('Please fill in all required fields');
+        setLoading(false);
+        return;
+      }
+
+      const response = await axios.post("/createEvent", submitData, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+      });
+
+      console.log("Event posted successfully:", response.data);
+      setMessage('Event created successfully!');
+      
+      // Reset form
+      setFormData({
+        owner: user ? user.name : "",
+        title: "",
+        optional: "",
+        description: "",
+        organizedBy: "",
+        eventDate: "",
+        eventTime: "",
+        location: "",
+        ticketPrice: 0,
+        category: ""
+      });
+      setImage(null);
+      
+      // Clear file input
+      const fileInput = document.getElementById('image');
+      if (fileInput) fileInput.value = '';
+
+    } catch (error) {
+      console.error("Error posting event:", error);
+      setMessage('Error creating event. Please try again.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div className="min-h-screen bg-gray-950 text-white flex flex-col justify-center items-center p-6">
+      <div className="w-full max-w-4xl bg-gray-900 p-8 rounded-2xl shadow-2xl border border-gray-700">
+        
+        <div className="text-center mb-10">
+          <h1 className="text-4xl font-extrabold text-white tracking-wider">Post an Event</h1>
+          <p className="mt-2 text-gray-400">Bring your community together. Fill out the details below.</p>
         </div>
 
-        <div className="relative z-0 w-2/3 px-1 mb-2 group">
-          <input type="Date" name="floating_last_name" id="floating_last_name" className="block py-2.5 px-0 w-full text-sm text-gray-900 bg-transparent border-0 border-b-2 border-gray-300 appearance-none dark:text-white dark:border-gray-600 dark:focus:border-blue-500 focus:outline-none focus:ring-0 focus:border-blue-600 peer" placeholder=" " required />
-          <label for="floating_last_name" className="peer-focus:font-medium absolute text-sm text-gray-500 dark:text-gray-400 duration-300 transform -translate-y-6 scale-75 top-3 -z-10 origin-[0] peer-focus:left-0 peer-focus:text-blue-600 peer-focus:dark:text-blue-500 peer-placeholder-shown:scale-100 peer-placeholder-shown:translate-y-0 peer-focus:scale-75 peer-focus:-translate-y-6">Date</label>
-        </div>
+        {/* Success/Error Message */}
+        {message && (
+          <div className={`mb-6 p-4 rounded-lg ${
+            message.includes('successfully') 
+              ? 'bg-green-900/50 border border-green-700 text-green-200' 
+              : 'bg-red-900/50 border border-red-700 text-red-200'
+          }`}>
+            {message}
+          </div>
+        )}
+
+        <form onSubmit={handleSubmit} className="grid md:grid-cols-2 gap-x-8 gap-y-6">
+
+          {/* Text Inputs */}
+          {[
+            { label: "Event Title *", name: "title", type: "text", required: true },
+            { label: "Optional Info", name: "optional", type: "text", required: false },
+            { label: "Organized By *", name: "organizedBy", type: "text", required: true },
+            { label: "Location *", name: "location", type: "text", required: true },
+            { label: "Event Date *", name: "eventDate", type: "date", required: true },
+            { label: "Event Time", name: "eventTime", type: "time", required: false },
+            { label: "Ticket Price ($)", name: "ticketPrice", type: "number", required: false, min: 0 }
+          ].map(({ label, name, type, required, min }) => (
+            <div key={name} className="relative z-0 w-full group">
+              <input
+                type={type}
+                name={name}
+                id={name}
+                className="block py-2.5 px-0 w-full text-sm text-white bg-transparent border-0 border-b-2 border-gray-600 appearance-none focus:outline-none focus:ring-0 focus:border-yellow-400 peer"
+                placeholder=" "
+                value={formData[name]}
+                onChange={handleChange}
+                required={required}
+                min={min}
+                step={type === 'number' ? '0.01' : undefined}
+              />
+              <label
+                htmlFor={name}
+                className="absolute text-sm text-gray-400 duration-300 transform -translate-y-6 scale-75 top-3 -z-10 origin-[0] peer-focus:left-0 peer-focus:text-yellow-400 peer-focus:scale-75 peer-focus:-translate-y-6 peer-placeholder-shown:scale-100 peer-placeholder-shown:translate-y-0 peer-placeholder-shown:top-1/2 peer-placeholder-shown:-translate-y-1/2"
+              >
+                {label}
+              </label>
+            </div>
+          ))}
+
+          {/* Category Dropdown */}
+          <div className="relative z-0 w-full group">
+            <select
+              name="category"
+              id="category"
+              value={formData.category}
+              onChange={handleChange}
+              required
+              className="block py-2.5 px-0 w-full text-sm text-white bg-transparent border-0 border-b-2 border-gray-600 appearance-none focus:outline-none focus:ring-0 focus:border-yellow-400 peer cursor-pointer"
+              style={{
+                backgroundImage: `url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='m6 8 4 4 4-4'/%3e%3c/svg%3e")`,
+                backgroundPosition: 'right 0.5rem center',
+                backgroundRepeat: 'no-repeat',
+                backgroundSize: '1.5em 1.5em',
+                paddingRight: '2.5rem'
+              }}
+            >
+              <option value="" disabled hidden></option>
+              {categories.map(cat => (
+                <option key={cat.value} value={cat.value} className="bg-gray-900 text-white">
+                  {cat.label}
+                </option>
+              ))}
+            </select>
+            <label
+              htmlFor="category"
+              className="absolute text-sm text-gray-400 duration-300 transform -translate-y-6 scale-75 top-3 -z-10 origin-[0] peer-focus:left-0 peer-focus:text-yellow-400 peer-focus:scale-75 peer-focus:-translate-y-6 peer-placeholder-shown:scale-100 peer-placeholder-shown:translate-y-0 peer-placeholder-shown:top-1/2 peer-placeholder-shown:-translate-y-1/2"
+            >
+              Category *
+            </label>
+          </div>
+
+          {/* Description */}
+          <div className="md:col-span-2">
+            <label htmlFor="description" className="block text-sm font-medium text-gray-400 mb-2">
+              Description *
+            </label>
+            <textarea
+              name="description"
+              id="description"
+              rows="4"
+              className="w-full p-4 text-white bg-gray-800 rounded-lg border border-gray-700 focus:ring-yellow-500 focus:border-yellow-500 transition-shadow duration-300"
+              value={formData.description}
+              onChange={handleChange}
+              placeholder="Tell people about your event..."
+              required
+            ></textarea>
+          </div>
+
+          {/* Image Upload */}
+          <div className="md:col-span-2">
+            <label className="block text-sm font-medium text-gray-400 mb-2">
+              Event Image
+            </label>
+            <div className="flex items-center justify-center w-full">
+              <label
+                htmlFor="image"
+                className="flex flex-col items-center justify-center w-full h-48 border-2 border-gray-700 border-dashed rounded-lg cursor-pointer bg-gray-800 hover:bg-gray-700 transition-colors duration-300 group"
+              >
+                <div className="flex flex-col items-center justify-center pt-5 pb-6">
+                  <svg className="w-8 h-8 mb-4 text-gray-400 group-hover:text-white" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 20 16">
+                    <path stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 13h3a3 3 0 0 0 0-6h-.025A5.56 5.56 0 0 0 16 6.5 5.5 5.5 0 0 0 5.207 5.021C5.137 5.017 5.071 5 5 5a4 4 0 0 0 0 8h2.167M10 15V6m0 0L8 8m2-2 2 2"/>
+                  </svg>
+                  <p className="mb-2 text-sm text-gray-400 group-hover:text-white">
+                    <span className="font-semibold">Click to upload</span> or drag and drop
+                  </p>
+                  <p className="text-xs text-gray-500 group-hover:text-gray-300">PNG, JPG, JPEG (MAX. 10MB)</p>
+                  {image && (
+                    <p className="text-xs text-yellow-400 mt-2">Selected: {image.name}</p>
+                  )}
+                </div>
+                <input 
+                  id="image" 
+                  type="file" 
+                  name="image" 
+                  className="hidden" 
+                  onChange={handleImageUpload}
+                  accept="image/*"
+                />
+              </label>
+            </div>
+            {image && (
+              <div className="mt-4">
+                <p className="text-sm text-gray-400 mb-2">Image Preview:</p>
+                <img
+                  src={URL.createObjectURL(image)}
+                  alt="Preview"
+                  className="rounded-lg w-full h-64 object-cover shadow-xl border border-gray-700"
+                />
+              </div>
+            )}
+          </div>
+
+          {/* Submit Button */}
+          <div className="md:col-span-2">
+            <button
+              type="submit"
+              disabled={loading}
+              className="w-full bg-yellow-500 text-gray-900 font-bold py-3 rounded-lg hover:bg-yellow-400 transition-colors duration-300 transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
+            >
+              {loading ? 'Creating Event...' : 'Submit Event'}
+            </button>
+          </div>
+        </form>
       </div>
     </div>
-
-
-      <div className ="flex justify-evenly">
-      <div className="grid md:grid-cols-2 md:gap-6">
-        <div className="relative z-0 w-2/3 px-1 mb-8 group">
-            <input type="text" name="floating_first_name" id="floating_first_name" className="block py-2.5 px-0 w-96 text-sm text-gray-900 bg-transparent border-0 border-b-2 border-gray-300 appearance-none dark:text-white dark:border-gray-600 dark:focus:border-blue-500 focus:outline-none focus:ring-0 focus:border-blue-600 peer" placeholder=" " required />
-            <label for="floating_first_name" className="peer-focus:font-medium absolute text-sm text-gray-500 dark:text-gray-400 duration-300 transform -translate-y-6 scale-75 top-3 -z-10 origin-[0] peer-focus:left-0 peer-focus:text-blue-600 peer-focus:dark:text-blue-500 peer-placeholder-shown:scale-100 peer-placeholder-shown:translate-y-0 peer-focus:scale-75 peer-focus:-translate-y-6">Proposed by :</label>
-        </div>
-        
-          <div className="relative z-0 w-2/3 px-1 mb-2 group">
-              <input type="Time" name="floating_time" id="floating_time" className="block py-2.5 px-0 w-full text-sm text-gray-900 bg-transparent border-0 border-b-2 border-gray-300 appearance-none dark:text-white dark:border-gray-600 dark:focus:border-blue-500 focus:outline-none focus:ring-0 focus:border-blue-600 peer" placeholder=" " required />
-              <label for="floating_last_name" className="peer-focus:font-medium absolute text-sm text-gray-500 dark:text-gray-400 duration-300 transform -translate-y-6 scale-75 top-3 -z-10 origin-[0] peer-focus:left-0 peer-focus:text-blue-600 peer-focus:dark:text-blue-500 peer-placeholder-shown:scale-100 peer-placeholder-shown:translate-y-0 peer-focus:scale-75 peer-focus:-translate-y-6">Time</label>
-          </div>
-      </div>
-      </div>
-      
-      <div className="flex justify-center">
-        <div className="relative z-0 w-2/3 mb-6 group ">
-          <input type="text" name="floating_password" id="floating_password" className="block py-2.5 px-0 w-full text-sm text-gray-900 bg-transparent border-0 border-b-2 border-gray-300 appearance-none dark:text-white dark:border-gray-600 dark:focus:border-blue-500 focus:outline-none focus:ring-0 focus:border-blue-600 peer" placeholder=" " required />
-          <label for="floating_password" className=" peer-focus:font-medium absolute text-sm text-gray-500 dark:text-gray-400 duration-300 transform -translate-y-6 scale-75 top-3 -z-10 origin-[0] peer-focus:left-0 peer-focus:text-blue-600 peer-focus:dark:text-blue-500 peer-placeholder-shown:scale-100 peer-placeholder-shown:translate-y-0 peer-focus:scale-75 peer-focus:-translate-y-6">Event Type :</label>
-         </div>
-      </div>
-      
-      <div className="flex justify-center">
-        <div className="relative z-0 w-2/3 mb-6 group ">
-          <input type="text" name="floating_password" id="floating_password" className="block py-2.5 px-0 w-full text-sm text-gray-900 bg-transparent border-0 border-b-2 border-gray-300 appearance-none dark:text-white dark:border-gray-600 dark:focus:border-blue-500 focus:outline-none focus:ring-0 focus:border-blue-600 peer" placeholder=" " required />
-          <label for="floating_password" className=" peer-focus:font-medium absolute text-sm text-gray-500 dark:text-gray-400 duration-300 transform -translate-y-6 scale-75 top-3 -z-10 origin-[0] peer-focus:left-0 peer-focus:text-blue-600 peer-focus:dark:text-blue-500 peer-placeholder-shown:scale-100 peer-placeholder-shown:translate-y-0 peer-focus:scale-75 peer-focus:-translate-y-6">Place :</label>
-         </div>
-      </div>
-
-      <div className="flex justify-evenly">  
-        <div className="w-2/3 justify-items-start">
-          <label for="message" className="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Event Description :</label>
-          <textarea id="message" rows="4" className="block p-2.5 w-full text-sm text-gray-900 bg-gray-50 rounded-lg border border-gray-300 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500" placeholder="Leave a comment..."></textarea>
-        </div>
-      </div><br></br>
-
-      <div className="flex justify-evenly">
-        <div className="w-2/3 justify-items-star">
-          <label for="message" className="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Event Goal :</label>
-          <textarea id="message" rows="4" className="block p-2.5 w-full text-sm text-gray-900 bg-gray-50 rounded-lg border border-gray-300 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500" placeholder="Leave a comment..."></textarea>
-        </div>
-      </div>  <br></br>
-
-      <div className="flex justify-evenly">
-        <div className="flex w-2/3">
-          <h1>Additional Information</h1>
-        </div>
-      </div><br></br>
-
-      <div className="flex justify-evenly">
-            <div className="relative z-0 w-2/3 mb-6 group ">
-              <input
-                type="text"
-                name="floating_password"
-                id="floating_password"
-                className="block py-2.5 px-0 w-full text-sm text-gray-900 bg-transparent border-0 border-b-2 border-gray-300 appearance-none dark:text-white dark:border-gray-600 dark:focus:border-blue-500 focus:outline-none focus:ring-0 focus:border-blue-600 peer"
-                placeholder=" "
-                required
-              />
-              <label
-                for="floating_password"
-                className="peer-focus:font-medium absolute text-sm text-gray-500 dark:text-gray-400 duration-300 transform -translate-y-6 scale-75 top-3 -z-10 origin-[0] peer-focus:left-0 peer-focus:text-blue-600 peer-focus:dark:text-blue-500 peer-placeholder-shown:scale-100 peer-placeholder-shown:translate-y-0 peer-focus:scale-75 peer-focus:-translate-y-6"
-              >
-                Expected Participants :
-              </label>
-            </div>
-          </div>
-
-          <div className="flex justify-evenly">
-            <div className="relative z-0 w-2/3 mb-6 group">
-              <input
-                type="text"
-                name="floating_password"
-                id="floating_password"
-                className="block py-2.5 px-0 w-full text-sm text-gray-900 bg-transparent border-0 border-b-2 border-gray-300 appearance-none dark:text-white dark:border-gray-600 dark:focus:border-blue-500 focus:outline-none focus:ring-0 focus:border-blue-600 peer"
-                placeholder=" "
-                required
-              />
-              <label
-                for="floating_password"
-                className="peer-focus:font-medium absolute text-sm text-gray-500 dark:text-gray-400 duration-300 transform -translate-y-6 scale-75 top-3 -z-10 origin-[0] peer-focus:left-0 peer-focus:text-blue-600 peer-focus:dark:text-blue-500 peer-placeholder-shown:scale-100 peer-placeholder-shown:translate-y-0 peer-focus:scale-75 peer-focus:-translate-y-6"
-              >
-                Expected Participants Count :
-              </label>
-            </div>
-          </div>
-
-      <div className="flex justify-evenly">
-        <div className="flex w-2/3">
-          <h1 className="font-bold">
-            <b> Budget Report </b>
-          </h1>
-        </div>
-      </div>
-      <br></br>
-
-      <div className="flex justify-evenly">
-        <div className="flex w-2/3">
-          <h1>
-          Expected Income Details
-          </h1>
-        </div>
-      </div><br></br>
-
-      <div className="flex justify-evenly">
-        <div className="relative z-0 w-2/3 mb-6 group">
-          <table className="w-full text-sm text-left text-blue-100 dark:text-blue-100">
-            <thead className="text-xs text-black uppercase bg-blue-200 border-b border-blue-100 dark:text-black">
-              <tr>
-                <th scope="col" className="px-6 py-3 bg-blue-200">
-                  Description
-                </th>
-                <th scope="col" className="px-6 py-3">
-                  Price
-                </th>
-                <th scope="col" className="px-6 py-3 bg-blue-200">
-                  Reference
-                </th>
-              </tr>
-            </thead>
-            <tbody>
-              {tableData1.map((row, index) => (
-                <tr key={index}>
-                  <td className="text-black">
-                    <input
-                      type="text"
-                      value={row.description}
-                      onChange={(e) => {
-                        const updatedData = [...tableData1];
-                        updatedData[index].description = e.target.value;
-                        setTableData1(updatedData);
-                      }}
-                    />
-                  </td>
-                  <td className="text-black">
-                    <input
-                      type="text"
-                      value={row.price}
-                      onChange={(e) => {
-                        const updatedData = [...tableData1];
-                        updatedData[index].price = e.target.value;
-                        setTableData1(updatedData);
-                      }}
-                    />
-                  </td>
-                  <td className="text-black">
-                    <input
-                      type="text"
-                      value={row.reference}
-                      onChange={(e) => {
-                        const updatedData = [...tableData1];
-                        updatedData[index].reference = e.target.value;
-                        setTableData1(updatedData);
-                      }}
-                    />
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-            <tfoot>
-              <tr>
-                <td colSpan="3">
-                  <button
-                    className="text-white bg-blue-500 hover:bg-blue-700 text-sm py-2 px-4 rounded-md"
-                    onClick={addRow1}
-                  >
-                    Add row
-                  </button>
-                </td>
-              </tr>
-            </tfoot>
-          </table>
-        </div>
-      </div>
-
-      <div className="flex justify-evenly">
-        <div className="flex w-2/3">
-          <h1>
-          Expected Expenses Details
-          </h1>
-        </div>
-      </div><br></br>
-
-      <div className="flex justify-evenly">
-          <div className="relative z-0 w-2/3 mb-6 group">
-            <input type="text" name="floating_email" id="floating_email" className="block py-2.5 px-0 w-full text-sm text-gray-900 bg-transparent border-0 border-b-2 border-gray-300 appearance-none dark:text-white dark:border-gray-600 dark:focus:border-blue-500 focus:outline-none focus:ring-0 focus:border-blue-600 peer" placeholder=" " required />
-            <label for="floating_email" className="peer-focus:font-medium absolute text-sm text-gray-500 dark:text-gray-400 duration-300 transform -translate-y-6 scale-75 top-3 -z-10 origin-[0] peer-focus:left-0 peer-focus:text-blue-600 peer-focus:dark:text-blue-500 peer-placeholder-shown:scale-100 peer-placeholder-shown:translate-y-0 peer-focus:scale-75 peer-focus:-translate-y-6">Expected Total Expenses</label>
-          </div>
-        </div>
-
-        <div className="flex justify-evenly">
-          <div className="relative z-0 w-2/3 mb-6 group">
-            <table className="w-full text-sm text-left text-blue-100 dark:text-blue-100">
-              <thead className="text-xs text-black uppercase bg-blue-200 border-b border-blue-100 dark:text-black">
-                <tr>
-                  <th scope="col" className="px-6 py-3 bg-blue-200">
-                    Description
-                  </th>
-                  <th scope="col" className="px-6 py-3">
-                    Price
-                  </th>
-                  <th scope="col" className="px-6 py-3 bg-blue-200">
-                    Reference
-                  </th>
-                </tr>
-              </thead>
-              <tbody>
-                {tableData2.map((row, index) => (
-                  <tr key={index}>
-                    <td className="text-black"> {/* Add text-black className here */}
-                      <input
-                        type="text"
-                        value={row.description}
-                        onChange={(e) => {
-                          const updatedData = [...tableData2];
-                          updatedData[index].description = e.target.value;
-                          setTableData2(updatedData);
-                        }}
-                      />
-                    </td>
-                    <td className="text-black"> {/* Add text-black className here */}
-                      <input
-                        type="text"
-                        value={row.price}
-                        onChange={(e) => {
-                          const updatedData = [...tableData2];
-                          updatedData[index].price = e.target.value;
-                          setTableData2(updatedData);
-                        }}
-                      />
-                    </td>
-                    <td className="text-black"> {/* Add text-black className here */}
-                      <input
-                        type="text"
-                        value={row.reference}
-                        onChange={(e) => {
-                          const updatedData = [...tableData2];
-                          updatedData[index].reference = e.target.value;
-                          setTableData2(updatedData);
-                        }}
-                      />
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-              <tfoot>
-                <tr>
-                  <td colSpan="3">
-                    <button
-                      className="text-white bg-blue-500 hover:bg-blue-700 text-sm py-2 px-4 rounded-md"
-                      onClick={addRow2}
-                    >
-                      Add row
-                    </button>
-                  </td>
-                </tr>
-              </tfoot>
-            </table>
-          </div>
-        </div>
-
-
-      <div className="flex justify-evenly">
-            <div className="flex w-2/3">
-              <h1>
-                Tickets Details
-              </h1>
-            </div>
-          </div>
-          <br></br>
-
-          <div className="flex justify-evenly">
-            <div className="relative z-0 w-2/3 mb-6 group">
-              <input
-                type="text"
-                name="ticket_price"
-                id="ticket_price"
-                className="block py-2.5 px-0 w-full text-sm text-gray-900 bg-transparent border-0 border-b-2 border-gray-300 appearance-none dark:text-white dark:border-gray-600 dark:focus:border-blue-500 focus:outline-none focus:ring-0 focus:border-blue-600 peer"
-                placeholder=" "
-                required
-              />
-              <label
-                for="ticket_price"
-                className="peer-focus:font-medium absolute text-sm text-gray-500 dark:text-gray-400 duration-300 transform -translate-y-6 scale-75 top-3 -z-10 origin-[0] peer-focus:left-0 peer-focus:text-blue-600 peer-focus:dark:text-blue-500 peer-placeholder-shown:scale-100 peer-placeholder-shown:translate-y-0 peer-focus:scale-75 peer-focus:-translate-y-6"
-              >
-                Ticket Price :
-              </label>
-            </div>
-          </div>
-
-
-          <div className="flex justify-evenly">
-            <div className="relative z-0 w-2/3 mb-6 group">
-              <input
-                type="email"
-                name="floating_email"
-                id="floating_email"
-                className="block py-2.5 px-0 w-full text-sm text-gray-900 bg-transparent border-0 border-b-2 border-gray-300 appearance-none dark:text-white dark:border-gray-600 dark:focus:border-blue-500 focus:outline-none focus:ring-0 focus:border-blue-600 peer"
-                placeholder=" "
-                required
-              />
-              <label
-                for="floating_email"
-                className="peer-focus:font-medium absolute text-sm text-gray-500 dark:text-gray-400 duration-300 transform -translate-y-6 scale-75 top-3 -z-10 origin-[0] peer-focus:left-0 peer-focus:text-blue-600 peer-focus:dark:text-blue-500 peer-placeholder-shown:scale-100 peer-placeholder-shown:translate-y-0 peer-focus:scale-75 peer-focus:-translate-y-6"
-              >
-                Available Quantity :
-              </label>
-            </div>
-          </div>
-
-          <div className="flex justify-evenly">
-            <div className="flex w-2/3">
-              <h1>
-                Promotion Details
-              </h1>
-            </div>
-          </div>
-          <br></br>
-
-          <div className="flex justify-evenly">
-            <div className="relative z-0 w-2/3 mb-6 group">
-              <div className="flex items-center justify-center w-full">
-                  <label for="dropzone-file" className="flex flex-col items-center justify-center w-full h-64 border-2 border-gray-300 border-dashed rounded-lg cursor-pointer bg-gray-50 dark:hover:bg-bray-800 dark:bg-gray-700 hover:bg-gray-100 dark:border-gray-600 dark:hover:border-gray-500 dark:hover:bg-gray-600">
-                      <div className="flex flex-col items-center justify-center pt-5 pb-6">
-                          <svg className="w-8 h-8 mb-4 text-gray-500 dark:text-gray-400" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 20 16">
-                              <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 13h3a3 3 0 0 0 0-6h-.025A5.56 5.56 0 0 0 16 6.5 5.5 5.5 0 0 0 5.207 5.021C5.137 5.017 5.071 5 5 5a4 4 0 0 0 0 8h2.167M10 15V6m0 0L8 8m2-2 2 2"/>
-                          </svg>
-                          <p className="mb-2 text-sm text-gray-500 dark:text-gray-400"><span className="font-semibold">Click to upload</span> or drag and drop</p>
-                          <p className="text-xs text-gray-500 dark:text-gray-400">PNG, JPG, PDF </p>
-                      </div>
-                      <input id="dropzone-file" type="file" className="hidden" />
-                  </label>
-              </div> 
-            </div>
-          </div>
-
-
-          <div className="flex justify-evenly">
-            <div className="w-2/3 justify-items-start">
-              <label
-                for="message"
-                className="block mb-2 text-sm font-medium text-gray-900 dark:text-white"
-              ></label>
-              <textarea
-                id="message"
-                rows="4"
-                className="block p-2.5 w-full text-sm text-gray-900 bg-gray-50 rounded-lg border border-gray-300 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500"
-                placeholder="Caption"
-              ></textarea>
-            </div>
-          </div>
-        </div>
-      </form>
-      <br></br>
-
-      </>
-      )
-    }
-
+  );
+}

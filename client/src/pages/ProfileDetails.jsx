@@ -69,7 +69,7 @@ export default function ProfileDetails() {
                         <p className="text-gray-400 text-lg flex items-center justify-center sm:justify-start mt-2">
                              <FaEnvelope className="mr-2" /> {user.email}
                         </p>
-                        <Link to="/profile/edit" className="mt-4 inline-block">
+                        <Link to="/profileedit" className="mt-4 inline-block">
                              <button className="px-6 py-2 bg-red-600 text-white font-semibold rounded-lg hover:bg-red-700 transition duration-200 shadow-md">
                                 Edit Profile
                             </button>
