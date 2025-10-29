@@ -40,7 +40,7 @@ export default function AdminLoginPage() {
   // 🟢 FIX: Redirect to Admin Dashboard upon successful login
   if (redirect) {
     // This triggers the navigation to the protected dashboard route
-    return <Navigate to="/admin/dashboard" />;
+    return <Navigate to="/admindashboard" />;
   }
 
   return (

@@ -12,6 +12,10 @@ export default function Header() {
   const [searchQuery, setSearchQuery] = useState("");
   const searchInputRef = useRef();
 
+  // Helper boolean variables for clearer conditional rendering
+  const isAdmin = user && user.role === 'admin';
+  const isContributorOrAdmin = user && (user.role === 'contributor' || user.role === 'admin');
+
   //! Fetch events
   useEffect(() => {
     axios.get("/events")
@@ -42,17 +46,26 @@ export default function Header() {
       <div className="flex items-center gap-4">
         <img src={logo} alt="Logo" className="w-24" />
         <nav className="hidden md:flex gap-6 text-yellow-500 font-semibold">
-          <Link className="px-4 py-2 hover:bg-gray-100"to="/">Actuality</Link>
+          <Link className="px-4 py-2 hover:bg-gray-100" to="/">Actuality</Link>
           <Link className="px-4 py-2 hover:bg-gray-100" to="/categories">Categories</Link>
           <Link className="px-4 py-2 hover:bg-gray-100" to="/profile">Profil</Link>
-          <Link className="px-4 py-2 hover:bg-gray-100" to="/createEvent">Create Event</Link>
-                <Link className="px-4 py-2 hover:bg-gray-100" to="/wallet">Wallet</Link>
-                <Link className="px-4 py-2 hover:bg-gray-100" to="/verification">Center</Link>
-                <Link className="px-4 py-2 hover:bg-gray-100" to="/calendar">Calendar</Link>
+
+          {/* Conditional Link: Admin Dashboard */}
+          {isAdmin && (
+            <Link className="px-4 py-2 hover:bg-gray-100" to="/admindashboard">Dashboard</Link>
+          )}
+
+          {/* Conditional Link: Create Event (for Admin and Contributor) */}
+          {isContributorOrAdmin && (
+            <Link className="px-4 py-2 hover:bg-gray-100" to="/createEvent">Create Event</Link>
+          )}
+
+          <Link className="px-4 py-2 hover:bg-gray-100" to="/wallet">Wallet</Link>
+          <Link className="px-4 py-2 hover:bg-gray-100" to="/calendar">Calendar</Link>
         </nav>
       </div>
 
-      {/* Middle: Search */}
+      {/* Middle: Search (No changes needed) */}
       <div className="flex items-center bg-white rounded py-2 px-4 w-1/3 gap-4 shadow-md shadow-gray-200 relative">
         <button>
           <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-4 h-4">
@@ -82,7 +95,7 @@ export default function Header() {
         )}
       </div>
 
-      {/* Right: User / Auth */}
+      {/* Right: User / Auth (Dropdown updates) */}
       <div className="flex items-center gap-4">
         {!user && (
           <Link to="/select-role">
@@ -97,9 +110,17 @@ export default function Header() {
 
             {isMenuOpen && (
               <div className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg flex flex-col z-20">
-                <Link className="px-4 py-2 hover:bg-gray-100" to="/createEvent">Create Event</Link>
+                {/* Conditional Link in Dropdown: Admin Dashboard */}
+                {isAdmin && (
+                    <Link className="px-4 py-2 hover:bg-gray-100" to="/admindashboard">Dashboard</Link>
+                )}
+                
+                {/* Conditional Link in Dropdown: Create Event */}
+                {isContributorOrAdmin && (
+                    <Link className="px-4 py-2 hover:bg-gray-100" to="/createEvent">Create Event</Link>
+                )}
+
                 <Link className="px-4 py-2 hover:bg-gray-100" to="/wallet">Wallet</Link>
-                <Link className="px-4 py-2 hover:bg-gray-100" to="/verification">Center</Link>
                 <Link className="px-4 py-2 hover:bg-gray-100" to="/calendar">Calendar</Link>
                 <button className="px-4 py-2 text-left hover:bg-gray-100" onClick={logout}>Log out</button>
               </div>

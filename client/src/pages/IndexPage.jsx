@@ -43,12 +43,7 @@ export default function IndexPage() {
     <div className="min-h-screen bg-gray-950 text-white animate-fade-in">
       <div className="px-6 md:px-12 lg:px-24 py-8">
         {/* Main Header with All Events link */}
-        <div className="flex justify-between items-center my-6">
-          <h2 className="text-3xl font-bold text-white tracking-wide">
-            À La Une
-          </h2>
-
-        </div>
+        
 
         {/* Featured Events Grid */}
         <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">

@@ -43,7 +43,7 @@ function App() {
         <Route element={<ProtectedRoute allowedRoles={['contributor', 'admin']} />}>
             <Route path='/createEvent' element = {<AddEvent/>} />
         </Route>
-        <Route path="/admin/dashboard" element={<AdminDashboard />} />
+        <Route path="/admindashboard" element={<AdminDashboard />} />
         <Route path='/event/:id' element= {<EventPage/>} />
         <Route path='/calendar' element={<CalendarView />} />
         <Route path='/wallet' element={<TicketPage />}/>

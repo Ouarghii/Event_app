@@ -7,6 +7,34 @@ import { UserContext } from '../UserContext';
 import Qrcode from 'qrcode';
 import { HiOutlineUser, HiOutlineMail, HiOutlineDeviceMobile, HiOutlineCreditCard, HiOutlineCalendar, HiOutlineLockClosed } from 'react-icons/hi';
 
+// =========================================================
+// 🔑 DEFINITIVE FIX: Move InputWithLabel definition here
+// =========================================================
+const InputWithLabel = ({ name, label, type, icon, value, onChange, disabled, required = true }) => (
+  <div className="relative z-0 group w-full">
+    <input
+      type={type}
+      name={name}
+      id={name}
+      value={value}
+      onChange={onChange}
+      disabled={disabled}
+      placeholder=" "
+      required={required} 
+      className="block w-full px-4 py-3 text-sm text-white bg-gray-800 rounded-lg appearance-none focus:outline-none focus:ring-0 peer transition-all duration-300 transform scale-100 placeholder-transparent"
+    />
+    <label
+      htmlFor={name}
+      className="absolute text-sm text-gray-400 duration-300 transform -translate-y-4 scale-75 top-4 z-10 origin-[0] start-4 peer-focus:text-yellow-400 peer-placeholder-shown:scale-100 peer-placeholder-shown:translate-y-0 peer-focus:scale-75 peer-focus:-translate-y-4 rtl:peer-focus:translate-x-1/4 rtl:peer-focus:left-auto"
+    >
+      {label}
+      {required && <span className="text-red-500 ml-1">*</span>} 
+    </label>
+    {icon && <div className="absolute top-1/2 -translate-y-1/2 right-4 text-gray-400 peer-focus:text-yellow-400 transition-colors duration-300">{icon}</div>}
+  </div>
+);
+// =========================================================
+
 export default function PaymentSummary() {
   const { id } = useParams();
   const [event, setEvent] = useState(null);
@@ -134,28 +162,6 @@ export default function PaymentSummary() {
     return <Navigate to={'/wallet'} />;
   }
 
-  const InputWithLabel = ({ name, label, type, icon, value, onChange, disabled }) => (
-    <div className="relative z-0 group w-full">
-      <input
-        type={type}
-        name={name}
-        id={name}
-        value={value}
-        onChange={onChange}
-        disabled={disabled}
-        placeholder=" "
-        className="block w-full px-4 py-3 text-sm text-white bg-gray-800 rounded-lg appearance-none focus:outline-none focus:ring-0 peer transition-all duration-300 transform scale-100 placeholder-transparent"
-      />
-      <label
-        htmlFor={name}
-        className="absolute text-sm text-gray-400 duration-300 transform -translate-y-4 scale-75 top-4 z-10 origin-[0] start-4 peer-focus:text-yellow-400 peer-placeholder-shown:scale-100 peer-placeholder-shown:translate-y-0 peer-focus:scale-75 peer-focus:-translate-y-4 rtl:peer-focus:translate-x-1/4 rtl:peer-focus:left-auto"
-      >
-        {label}
-      </label>
-      {icon && <div className="absolute top-1/2 -translate-y-1/2 right-4 text-gray-400 peer-focus:text-yellow-400 transition-colors duration-300">{icon}</div>}
-    </div>
-  );
-
   return (
     <div className="min-h-screen bg-gray-950 text-white p-6 md:p-12 animate-fade-in">
       <Link to={`/event/${event._id}/ordersummary`} className="inline-block mb-8 md:mb-12">
@@ -173,6 +179,8 @@ export default function PaymentSummary() {
                 <h2 className="text-3xl font-extrabold text-white">Your Details</h2>
                 <div className="grid md:grid-cols-2 gap-6">
                   <InputWithLabel
+                    // 🔑 Key is necessary for React's reconciliation process to identify and keep the input stable
+                    key="detail-name" 
                     name="name"
                     label="Full Name"
                     type="text"
@@ -180,8 +188,11 @@ export default function PaymentSummary() {
                     value={user ? user.name : details.name}
                     onChange={handleChangeDetails}
                     disabled={!!user}
+                    required={!user} // Only required if not logged in
                   />
                   <InputWithLabel
+                    // 🔑 Key is necessary for React's reconciliation process
+                    key="detail-email"
                     name="email"
                     label="Email Address"
                     type="email"
@@ -189,9 +200,12 @@ export default function PaymentSummary() {
                     value={user ? user.email : details.email}
                     onChange={handleChangeDetails}
                     disabled={!!user}
+                    required={!user} // Only required if not logged in
                   />
                 </div>
                 <InputWithLabel
+                  // 🔑 Key is necessary for React's reconciliation process
+                  key="detail-contactNo"
                   name="contactNo"
                   label="Contact Number"
                   type="tel"
@@ -216,6 +230,8 @@ export default function PaymentSummary() {
                   </div>
                   <div className="grid md:grid-cols-2 gap-6">
                     <InputWithLabel
+                      // 🔑 Key is necessary for React's reconciliation process
+                      key="payment-nameOnCard"
                       name="nameOnCard"
                       label="Name on Card"
                       type="text"
@@ -224,6 +240,8 @@ export default function PaymentSummary() {
                       onChange={handleChangePayment}
                     />
                     <InputWithLabel
+                      // 🔑 Key is necessary for React's reconciliation process
+                      key="payment-cardNumber"
                       name="cardNumber"
                       label="Card Number"
                       type="text"
@@ -234,6 +252,8 @@ export default function PaymentSummary() {
                   </div>
                   <div className="grid md:grid-cols-2 gap-6">
                     <InputWithLabel
+                      // 🔑 Key is necessary for React's reconciliation process
+                      key="payment-expiryDate"
                       name="expiryDate"
                       label="Expiry Date (MM/YY)"
                       type="text"
@@ -242,6 +262,8 @@ export default function PaymentSummary() {
                       onChange={handleChangePayment}
                     />
                     <InputWithLabel
+                      // 🔑 Key is necessary for React's reconciliation process
+                      key="payment-cvv"
                       name="cvv"
                       label="CVV"
                       type="text"
