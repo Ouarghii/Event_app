@@ -326,7 +326,6 @@ app.get("/admin/profile", (req, res) => {
 // 🟢 CONTRIBUTOR ROUTES
 // =================================================================
 
-// Contributor Registration
 app.post("/contributor/register", async (req, res) => {
     const { name, email, password } = req.body;
     try {
@@ -334,19 +333,27 @@ app.post("/contributor/register", async (req, res) => {
             name,
             email,
             password: bcrypt.hashSync(password, bcryptSalt),
+            // status will default to 'on_progress' from the schema
         });
         res.json(contributorDoc);
     } catch (e) {
+        // Handle duplicate email or other validation errors
         res.status(422).json({ error: "Contributor registration failed" });
     }
 });
 
-// Contributor Login
+// Contributor Login (UPDATED with status check)
 app.post("/contributor/login", async (req, res) => {
     const { email, password } = req.body;
     const contributorDoc = await ContributorModel.findOne({ email });
 
     if (!contributorDoc) return res.status(404).json({ error: "Contributor not found" });
+    
+    // 🛑 NEW: Check if the contributor is accepted
+    if (contributorDoc.status !== 'accepted') {
+        // Prevent login and inform the user they are pending approval
+        return res.status(403).json({ error: "Account pending approval by Admin" });
+    }
 
     const passOk = bcrypt.compareSync(password, contributorDoc.password);
     if (!passOk) return res.status(401).json({ error: "Invalid password" });
@@ -365,6 +372,45 @@ app.post("/contributor/login", async (req, res) => {
             });
         }
     );
+});
+// GET /pendingContributors
+// Fetches all contributors awaiting approval for the Admin UI.
+app.get("/pendingContributors", async (req, res) => {
+    try {
+        // 🚨 IMPORTANT: Add Admin Auth Middleware here.
+        const pendingContributors = await ContributorModel.find({ status: 'on_progress' }).select('-password');
+        res.json(pendingContributors);
+    } catch (e) {
+        res.status(500).json({ error: "Failed to fetch pending contributors" });
+    }
+});
+// PUT /contributors/:id/status
+// Updates a contributor's status to 'accepted'
+app.put("/contributors/:id/status", async (req, res) => {
+    // 🚨 IMPORTANT: Add Admin Auth Middleware here.
+    const { id } = req.params;
+    const { status } = req.body; // Expects 'accepted' or 'declined'
+
+    // Simple validation
+    if (!['accepted', 'declined'].includes(status)) {
+        return res.status(400).json({ error: "Invalid status update value." });
+    }
+
+    try {
+        const contributorDoc = await ContributorModel.findByIdAndUpdate(
+            id, 
+            { status: status }, 
+            { new: true } // Return the updated document
+        ).select('-password');
+
+        if (!contributorDoc) return res.status(404).json({ error: "Contributor not found" });
+        
+        // If status is 'declined', you might want to send a different response 
+        // or optionally use the DELETE route below, which is simpler for the frontend.
+        res.json(contributorDoc);
+    } catch (e) {
+        res.status(500).json({ error: "Failed to update contributor status" });
+    }
 });
 
 // Contributor Profile
@@ -783,7 +829,29 @@ app.get("/event/:id/ordersummary/paymentsummary", async (req, res) => {
         res.status(500).json({ error: "Failed to fetch event from MongoDB" });
     }
 });
+// --- Example: API to send a mass notification to event attendees ---
+app.post("/event/:eventId/notify", async (req, res) => {
+    const { eventId } = req.params;
+    const { message, subject } = req.body; // Data from the contributor's form
 
+    try {
+        // 1. Fetch the event and its attendees (tickets/orders)
+        const event = await Event.findById(eventId);
+        if (!event) return res.status(404).json({ error: "Event not found." });
+
+        // 2. Logic to fetch all user emails who bought tickets for this event
+        // const attendees = await Ticket.find({ eventId: eventId }).populate('userId', 'email');
+        // const emailList = [...new Set(attendees.map(t => t.userId.email))];
+
+        // 3. Logic to send the email/notification (using a mail service like nodemailer)
+        // await sendMassEmail(emailList, subject, message);
+
+        res.status(200).json({ message: `Notification successfully queued for ${event.title}.` });
+    } catch (error) {
+        console.error("Error sending notification:", error);
+        res.status(500).json({ error: "Failed to send event notification." });
+    }
+});
 // =================================================================
 // 🟢 TICKET ROUTES
 // =================================================================

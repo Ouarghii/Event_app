@@ -27,6 +27,7 @@ import ProtectedRoute from './ProtectedRoute';
 import AdminDashboard from './pages/AdminDashboard'; 
 import ProfilePage from './pages/ProfilePage'
 import ProfileDetails from './pages/ProfileDetails'
+import ContributorDashboard from './pages/ContributorDashboard'
 
 
 axios.defaults.baseURL = 'http://localhost:4000/';
@@ -44,6 +45,8 @@ function App() {
             <Route path='/createEvent' element = {<AddEvent/>} />
         </Route>
         <Route path="/admindashboard" element={<AdminDashboard />} />
+        <Route path="/contributordashboard" element={<ContributorDashboard/>} />
+
         <Route path='/event/:id' element= {<EventPage/>} />
         <Route path='/calendar' element={<CalendarView />} />
         <Route path='/wallet' element={<TicketPage />}/>

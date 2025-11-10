@@ -37,7 +37,116 @@ const StatCard = ({ title, value, color, icon }) => (
         <p className={`text-5xl font-extrabold mt-4 ${color.replace('bg-', 'text-')}`}>{value}</p>
     </div>
 );
+const ContributorApproval = ({ refresh }) => {
+    const [pendingContributors, setPendingContributors] = useState([]);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState(null);
 
+    const fetchPendingContributors = () => {
+        setLoading(true);
+        setError(null);
+        // 🚨 Fetch ONLY contributors where status is 'on_progress'
+        // ASSUMPTION: Backend has a route '/pendingContributors' returning contributors with status 'on_progress'
+        axios.get('/pendingContributors')
+            .then(response => {
+                setPendingContributors(response.data);
+                setLoading(false);
+            })
+            .catch(err => {
+                console.error("Error fetching pending contributors:", err.response ? err.response.data : err.message);
+                setError("⚠️ Failed to load pending contributors from the server. Check the '/pendingContributors' endpoint.");
+                setPendingContributors([]);
+                setLoading(false);
+            });
+    };
+
+    useEffect(() => {
+        fetchPendingContributors();
+    }, [refresh]);
+
+    // Function to handle contributor approval/rejection
+    const handleStatusUpdate = async (contributorId, newStatus, contributorName) => {
+        const action = newStatus === 'accepted' ? 'accept' : 'decline';
+        const message = newStatus === 'accepted' 
+            ? `Are you sure you want to accept the contributor "${contributorName}"?`
+            : `Are you sure you want to DECLINE the contributor "${contributorName}"? Declining deletes the request.`;
+            
+        if (!window.confirm(message)) return;
+
+        try {
+            if (newStatus === 'accepted') {
+                // Endpoint to update the contributor's status to 'accepted'
+                // ASSUMPTION: Backend PUT /contributors/:id/status updates the status field
+                await axios.put(`/contributors/${contributorId}/status`, { status: 'accepted' });
+                alert(`Contributor "${contributorName}" accepted successfully!`);
+            } else {
+                // OPTIONAL: Delete the contributor entirely upon rejection. 
+                // A better approach might be to set status to 'declined' and keep the record.
+                // For simplicity, we'll delete the 'on_progress' record here.
+                await axios.delete(`/contributors/${contributorId}`); 
+                alert(`Contributor "${contributorName}" declined and deleted successfully!`);
+            }
+            
+            fetchPendingContributors(); // Refresh the list
+        } catch (error) {
+            alert(`Failed to ${action} contributor. Check server logs and permissions.`);
+            console.error(`Error processing contributor ${action}:`, error);
+        }
+    };
+
+    if (loading) return <div className="text-white text-center py-10">Loading pending contributors...</div>;
+    if (error) return <div className="text-red-400 text-center py-10 p-4 border border-red-600 rounded-lg">{error}</div>;
+
+
+    return (
+        <div className={STYLES.cardBg}>
+            <h2 className={`text-2xl font-extrabold mb-6 ${STYLES.accentPrimary} border-b border-gray-700 pb-2`}>
+                👥 Pending Contributor Approval ({pendingContributors.length})
+            </h2>
+
+            {pendingContributors.length === 0 ? (
+                <p className="text-gray-400">✅ No new contributor applications awaiting approval!</p>
+            ) : (
+                <div className="space-y-4 max-h-[80vh] overflow-y-auto pr-2">
+                    {pendingContributors.map(contributor => (
+                        <div key={contributor._id} className="bg-gray-900 p-4 rounded-lg border border-gray-700 hover:border-red-500 transition duration-300 flex items-center justify-between gap-4">
+                            
+                            {/* CONTRIBUTOR DETAILS */}
+                            <div className="flex items-center gap-4 flex-grow">
+                                <span className="text-4xl text-yellow-400">👤</span>
+                                <div>
+                                    <p className="text-lg font-semibold text-white">{contributor.name}</p>
+                                    <p className="text-sm text-gray-400">
+                                        Email: <span className="text-yellow-400">{contributor.email}</span>
+                                    </p>
+                                    <p className="text-xs text-gray-500 mt-1">
+                                        Applied On: {new Date(contributor.createdAt).toLocaleDateString()}
+                                    </p>
+                                </div>
+                            </div>
+                            
+                            {/* Action Buttons */}
+                            <div className="flex space-x-2 flex-shrink-0">
+                                <button
+                                    onClick={() => handleStatusUpdate(contributor._id, 'accepted', contributor.name)}
+                                    className="px-3 py-2 bg-green-600 text-white rounded-lg text-sm font-semibold hover:bg-green-700 transition"
+                                >
+                                    Approve ✅
+                                </button>
+                                <button
+                                    onClick={() => handleStatusUpdate(contributor._id, 'declined', contributor.name)}
+                                    className="px-3 py-2 bg-red-600 text-white rounded-lg text-sm font-semibold hover:bg-red-700 transition"
+                                >
+                                    Decline ❌
+                                </button>
+                            </div>
+                        </div>
+                    ))}
+                </div>
+            )}
+        </div>
+    );
+};
 
 const PlatformStatistics = ({ refreshKey }) => {
     const [stats, setStats] = useState({
@@ -438,7 +547,6 @@ const UserManagement = ({ refreshTabs }) => {
 };
 // =================================================================
 
-const ContributorApproval = () => <div className={STYLES.cardBg}><h2 className={`text-2xl font-semibold mb-4 ${STYLES.accentSecondary}`}>👥 Approve New Contributors (Logic to be implemented)</h2></div>;
 
 // 💡 Component for detailed event list (UPDATED TO FILTER PUBLISHED)
 const EventListDetails = ({ refresh }) => {
@@ -556,8 +664,7 @@ export default function AdminDashboard() {
         'calendar': EventsCalendarView,
         'eventList': () => <EventListDetails refresh={refreshKey} />,
         'userMgmt': () => <UserManagement refreshTabs={refreshTabs} />,
-        'contributors': ContributorApproval,
-    };
+        'contributors': () => <ContributorApproval refresh={refreshKey} />,    };
     // -------------------------
 
     const ActiveComponent = tabComponents[activeTab];
@@ -604,7 +711,7 @@ export default function AdminDashboard() {
                                         {key === 'userMgmt' && '🔧'}
                                         {key === 'contributors' && '👥'}
                                     </span> 
-                                    <span className="capitalize">{key.replace(/([A-Z])/g, ' $1')}</span>
+                                    <span className="capitalize">{key.replace(/([A-Z])/g, ' $1').trim()}</span>
                                 </button>
                             ))}
                         </nav>
@@ -625,11 +732,20 @@ export default function AdminDashboard() {
 
             {/* Main Content */}
             <main className={STYLES.mainContentWrapper}>
-                
-             
+                {/* Header for Main Content (Removed to allow ActiveComponent to render fully without overlap issue) */}
+                <div className={STYLES.fixedHeader} style={{ position: 'relative', height: 'fit-content' }}>
+                    <h2 className={STYLES.headerText}>
+                        Welcome, {adminName}!
+                    </h2>
+                    <p className="text-gray-400 text-lg">{tabComponents[activeTab].name.replace(/([A-Z])/g, ' $1').trim() || activeTab.charAt(0).toUpperCase() + activeTab.slice(1)}</p>
+                </div>
                 
                 {/* Scrollable Content Body */}
-                <div className={STYLES.contentBody}>
+                {/* NOTE: Adjusting margin-top is typically for fixed headers. 
+                   If the fixedHeader is now static/relative, adjust the margin-top accordingly or remove it.
+                   I will keep the style and just adjust the fixedHeader to not be fixed, but inline with flow.
+                */}
+                <div className={STYLES.contentBody} style={{marginTop: '0px'}}> 
                     <ActiveComponent />
                 </div>
 
