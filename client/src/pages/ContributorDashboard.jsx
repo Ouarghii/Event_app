@@ -2,7 +2,15 @@ import React, { useState, useContext, useEffect } from 'react';
 import { Navigate } from 'react-router-dom';
 import { UserContext } from '../UserContext';
 import axios from 'axios';
-import { MdEvent, MdConfirmationNumber, MdAccessTimeFilled, MdExitToApp, MdOutlineScheduleSend } from 'react-icons/md';
+import { 
+    MdEvent, 
+    MdConfirmationNumber, 
+    MdAccessTimeFilled, 
+    MdExitToApp, 
+    MdOutlineScheduleSend, 
+    MdEdit, 
+    MdClose 
+} from 'react-icons/md'; // Added MdEdit, MdClose
 
 // --- Styling Constants ---
 const STYLES = {
@@ -20,13 +28,86 @@ const STYLES = {
 // --- End Styling Constants ---
 
 // =================================================================
+// 🆕 New Component: EditEventModal
+// =================================================================
+const EditEventModal = ({ event, onClose, onSave }) => {
+    const [newTime, setNewTime] = useState(event.eventTime || '');
+    const [newDate, setNewDate] = useState(new Date(event.eventDate).toISOString().split('T')[0] || '');
+    const [loading, setLoading] = useState(false);
+
+    const handleSubmit = async (e) => {
+        e.preventDefault();
+        setLoading(true);
+        
+        try {
+            // Send only the updated time and date, along with the required creatorId for auth
+            const updatedData = {
+                ...event, // Keep existing data
+                eventTime: newTime,
+                eventDate: newDate,
+                creatorId: event.creatorId, // Assuming event object has creatorId
+            };
+            
+            // Note: The backend PUT route needs to be implemented to accept this data
+            const response = await axios.put(`/event/${event._id}`, updatedData);
+            
+            onSave(response.data); // Pass the newly updated event back to the list
+            onClose();
+        } catch (error) {
+            alert('Failed to update event. See console for details.');
+            console.error('Error updating event:', error);
+            setLoading(false);
+        }
+    };
+
+    return (
+        <div className="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center z-50">
+            <div className="bg-gray-800 p-8 rounded-xl shadow-2xl w-full max-w-md border border-blue-600">
+                <div className="flex justify-between items-center mb-6 border-b border-gray-700 pb-3">
+                    <h3 className="text-2xl font-bold text-blue-400">Edit Time for "{event.title}"</h3>
+                    <button onClick={onClose} className="text-gray-400 hover:text-white"><MdClose size={24} /></button>
+                </div>
+
+                <form onSubmit={handleSubmit} className="space-y-4">
+                    <div>
+                        <label className="block text-sm font-medium text-gray-300 mb-1">New Event Date:</label>
+                        <input
+                            type="date"
+                            value={newDate}
+                            onChange={(e) => setNewDate(e.target.value)}
+                            className="w-full p-2 bg-gray-700 border border-gray-600 rounded text-white"
+                            required
+                        />
+                    </div>
+                    <div>
+                        <label className="block text-sm font-medium text-gray-300 mb-1">New Event Time (HH:MM):</label>
+                        <input
+                            type="time"
+                            value={newTime}
+                            onChange={(e) => setNewTime(e.target.value)}
+                            className="w-full p-2 bg-gray-700 border border-gray-600 rounded text-white"
+                            required
+                        />
+                    </div>
+                    <button
+                        type="submit"
+                        className={`w-full py-2 rounded-lg font-bold transition ${loading ? 'bg-gray-600 cursor-not-allowed' : 'bg-blue-600 hover:bg-blue-700'}`}
+                        disabled={loading}
+                    >
+                        {loading ? 'Saving...' : 'Save Changes'}
+                    </button>
+                </form>
+            </div>
+        </div>
+    );
+};
+
+// =================================================================
 // 🟢 ContributorSidebar (FIXED: Notifications ENABLED)
 // =================================================================
 const ContributorSidebar = ({ activeTab, setActiveTab, onLogout }) => {
     const navItems = [
         { name: 'My Events', component: 'myEvents', icon: MdEvent },
-        { name: 'Booked Tickets', component: 'bookedTickets', icon: MdConfirmationNumber },
-        // Fixed: Removed (Disabled) text
         { name: 'Event Notifications', component: 'notifications', icon: MdOutlineScheduleSend }, 
     ];
 
@@ -42,13 +123,11 @@ const ContributorSidebar = ({ activeTab, setActiveTab, onLogout }) => {
                     <button
                         key={item.component}
                         onClick={() => setActiveTab(item.component)}
-                        // Fixed: Removed disabled styling logic
                         className={`w-full flex items-center p-3 rounded-lg text-left transition duration-200 ${
                             isNavItemActive(item) 
                                 ? 'bg-blue-700/50 text-blue-400 font-bold border-l-4 border-blue-500' 
                                 : 'text-gray-300 hover:bg-gray-800/80'
                         }`}
-                        // Fixed: Removed 'disabled' attribute
                     >
                         <item.icon className="w-6 h-6 mr-3" />
                         {item.name}
@@ -69,70 +148,121 @@ const ContributorSidebar = ({ activeTab, setActiveTab, onLogout }) => {
 };
 
 // =================================================================
-// 🟢 MyEventsList (Lists events created by the contributor)
+// 🟢 MyEventsList (FIXED: Edit Button & Added Cancel Event)
 // =================================================================
 const MyEventsList = ({ contributorId }) => {
     const [events, setEvents] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
+    const [isModalOpen, setIsModalOpen] = useState(false);
+    const [selectedEvent, setSelectedEvent] = useState(null);
+
+    const fetchMyEvents = async () => {
+        setLoading(true);
+        setError(null);
+        try {
+            // Assuming the backend /events route handles creatorId filter
+            const response = await axios.get(`/events?creatorId=${contributorId}`);
+            setEvents(response.data);
+            setLoading(false);
+        } catch (err) {
+            setError("Failed to load your events. Ensure the backend '/events' route can filter by 'creatorId'.");
+            setLoading(false);
+            console.error('Error fetching contributor events:', err);
+        }
+    };
 
     useEffect(() => {
-        const fetchMyEvents = async () => {
-            setLoading(true);
-            setError(null);
-            try {
-                const response = await axios.get(`/events?creatorId=${contributorId}`);
-                setEvents(response.data);
-                setLoading(false);
-            } catch (err) {
-                setError("Failed to load your events. Ensure the backend '/events' route can filter by 'creatorId'.");
-                setLoading(false);
-                console.error('Error fetching contributor events:', err);
-            }
-        };
-
         if (contributorId) {
             fetchMyEvents();
         }
     }, [contributorId]);
 
+    const handleEditClick = (event) => {
+        setSelectedEvent(event);
+        setIsModalOpen(true);
+    };
+
+    const handleSaveEdit = (updatedEvent) => {
+        // Update the event list with the new data
+        setEvents(events.map(e => e._id === updatedEvent._id ? updatedEvent : e));
+    };
+    
+    // NEW: Handle Event Cancellation
+    const handleCancelEvent = async (eventId, eventTitle) => {
+        if (!window.confirm(`Are you absolutely sure you want to CANCEL the event: "${eventTitle}"? This cannot be undone.`)) {
+            return;
+        }
+
+        try {
+            // NOTE: You need to implement a DELETE /event/:id route in your backend
+            await axios.delete(`/event/${eventId}`); 
+            alert(`Event "${eventTitle}" cancelled successfully!`);
+            fetchMyEvents(); // Refresh the list
+        } catch (error) {
+            alert('Failed to cancel event. Check server logs.');
+            console.error('Error cancelling event:', error);
+        }
+    };
+
+
     if (loading) return <div className="text-white text-center py-10">Loading your events...</div>;
     if (error) return <div className="text-red-400 p-4 border border-red-600 rounded-lg">{error}</div>;
 
     return (
-        <div className={STYLES.cardBg}>
-            <h2 className={`text-2xl font-extrabold mb-6 ${STYLES.accentPrimary} border-b border-gray-700 pb-2`}>
-                📅 Your Events ({events.length})
-            </h2>
-
-            {events.length === 0 ? (
-                <p className="text-gray-400">You have not created any events yet.</p>
-            ) : (
-                <div className="space-y-4">
-                    {events.map(event => (
-                        <div key={event._id} className="bg-gray-900 p-4 rounded-lg border border-gray-700 flex justify-between items-center">
-                            <div>
-                                <p className="text-xl font-bold">{event.title}</p>
-                                <p className="text-sm text-gray-400">Date: {new Date(event.eventDate).toLocaleDateString()} at {event.eventTime} | Status: <span className="text-yellow-300 capitalize">{event.status}</span></p>
-                                <p className="text-xs text-gray-500">Likes: {event.likes}</p>
-                            </div>
-                            <div className="flex space-x-2">
-                                <button className="px-3 py-1 bg-green-600 rounded text-sm hover:bg-green-700">View</button>
-                                <button className="px-3 py-1 bg-blue-600 rounded text-sm hover:bg-blue-700">Edit</button>
-                            </div>
-                        </div>
-                    ))}
-                </div>
+        <>
+            {isModalOpen && selectedEvent && (
+                <EditEventModal 
+                    event={selectedEvent} 
+                    onClose={() => setIsModalOpen(false)} 
+                    onSave={handleSaveEdit}
+                />
             )}
-        </div>
+            
+            <div className={STYLES.cardBg}>
+                <h2 className={`text-2xl font-extrabold mb-6 ${STYLES.accentPrimary} border-b border-gray-700 pb-2`}>
+                    📅 Your Events ({events.length})
+                </h2>
+
+                {events.length === 0 ? (
+                    <p className="text-gray-400">You have not created any events yet.</p>
+                ) : (
+                    <div className="space-y-4">
+                        {events.map(event => (
+                            <div key={event._id} className="bg-gray-900 p-4 rounded-lg border border-gray-700 flex justify-between items-center">
+                                <div>
+                                    <p className="text-xl font-bold">{event.title}</p>
+                                    <p className="text-sm text-gray-400">Date: {new Date(event.eventDate).toLocaleDateString()} at {event.eventTime} | Status: <span className="text-yellow-300 capitalize">{event.status}</span></p>
+                                    <p className="text-xs text-gray-500">Likes: {event.likes}</p>
+                                </div>
+                                <div className="flex space-x-2">
+                                    <button 
+                                        onClick={() => handleEditClick(event)}
+                                        className="px-3 py-1 bg-blue-600 rounded text-sm hover:bg-blue-700 flex items-center"
+                                    >
+                                        <MdEdit className="mr-1" /> Edit Time
+                                    </button>
+                                    <button 
+                                        onClick={() => handleCancelEvent(event._id, event.title)}
+                                        className="px-3 py-1 bg-red-600 rounded text-sm hover:bg-red-700 flex items-center"
+                                    >
+                                        Cancel Event
+                                    </button>
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                )}
+            </div>
+        </>
     );
 };
 
 
 // =================================================================
-// 🟢 BookedTicketsList 
+// 🟢 BookedTicketsList (FIXED: Management Focused, No Cancellation)
 // =================================================================
-const BookedTicketsList = ({ contributorId }) => {
+const BookedTicketsList = () => {
     const [bookings, setBookings] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
@@ -141,6 +271,7 @@ const BookedTicketsList = ({ contributorId }) => {
         setLoading(true);
         setError(null);
         try {
+            // Fetch ALL tickets for contributor overview/management
             const response = await axios.get("/tickets"); 
             setBookings(response.data); 
             setLoading(false);
@@ -154,18 +285,7 @@ const BookedTicketsList = ({ contributorId }) => {
         fetchBookings(); 
     }, []);
 
-    const handleCancelBooking = async (bookingId, eventTitle) => {
-        if (!window.confirm(`Are you sure you want to cancel ticket ID ${bookingId} (Event: ${eventTitle || 'N/A'})?`)) return;
-
-        try {
-            await axios.delete(`/tickets/${bookingId}`); 
-            alert('Ticket cancelled successfully!');
-            fetchBookings(); // Refresh the list
-        } catch (error) {
-            alert('Failed to cancel ticket. Check server logs.');
-            console.error('Error cancelling ticket:', error);
-        }
-    };
+    // Removed handleCancelBooking as per request (focus on event cancellation)
 
     if (loading) return <div className="text-white text-center py-10">Loading ALL tickets...</div>;
     if (error) return <div className="text-red-400 p-4 border border-red-600 rounded-lg">{error}</div>;
@@ -173,9 +293,9 @@ const BookedTicketsList = ({ contributorId }) => {
     return (
         <div className={STYLES.cardBg}>
             <h2 className={`text-2xl font-extrabold mb-6 ${STYLES.accentPrimary} border-b border-gray-700 pb-2`}>
-                🎟️ Booked Tickets Management ({bookings.length})
+                🎟️ Booked Tickets Overview ({bookings.length})
             </h2>
-           
+            
 
             {bookings.length === 0 ? (
                 <p className="text-gray-400">No tickets found in the system.</p>
@@ -195,12 +315,9 @@ const BookedTicketsList = ({ contributorId }) => {
                                 </p>
                             </div>
                             
-                            <button
-                                onClick={() => handleCancelBooking(booking._id, booking.eventTitle)}
-                                className="px-3 py-2 bg-red-600 text-white rounded-lg text-sm font-semibold hover:bg-red-700 transition flex-shrink-0"
-                            >
-                                Cancel Ticket ❌
-                            </button>
+                            <span className="text-sm font-medium text-green-400 p-2 bg-green-900/40 rounded-lg flex-shrink-0">
+                                ACTIVE
+                            </span> 
                         </div>
                     ))}
                 </div>
@@ -210,8 +327,9 @@ const BookedTicketsList = ({ contributorId }) => {
 };
 
 // =================================================================
-// 🟢 EventNotificationSender (Now Functional Placeholder)
+// 🟢 EventNotificationSender 
 // =================================================================
+// ... (EventNotificationSender remains unchanged)
 const EventNotificationSender = () => {
     // This is a functional mock-up relying on the backend POST /event/:eventId/notify being available.
     
@@ -279,7 +397,7 @@ export default function ContributorDashboard() {
                 return <MyEventsList contributorId={user._id} />;
                 
             case 'bookedTickets':
-                return <BookedTicketsList contributorId={user._id} />; 
+                return <BookedTicketsList contributorId={user._id} />; // ContributorId is not currently used here but is passed
                 
             case 'notifications':
                 return <EventNotificationSender />; 

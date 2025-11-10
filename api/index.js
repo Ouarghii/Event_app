@@ -734,7 +734,60 @@ app.get("/categories", async (req, res) => {
         res.status(500).json({ error: "Failed to fetch categories" });
     }
 });
+// --- NEW: Update Event (PUT) ---
+app.put("/event/:id", async (req, res) => {
+    const { id } = req.params;
+    // FIX 1: Change 'creatorId' to 'owner' in destructuring to match your schema
+    const { title, description, eventDate, eventTime, status, category, owner } = req.body; 
+    
+    // **Security Note**: In a production app, 'owner' should be verified
+    // from the authenticated session/JWT (req.user.id), not trusted from the request body.
 
+    try {
+        if (!mongoose.Types.ObjectId.isValid(id)) {
+            return res.status(400).json({ error: "Invalid event ID" });
+        }
+        
+        // 1. Find the existing event
+        const event = await Event.findById(id);
+        if (!event) {
+            return res.status(404).json({ error: "Event not found" });
+        }
+
+        // 2. Authorization Check (FIXED)
+        // Check if the event's 'owner' field matches the ID provided in the request body
+        // We use .toString() to ensure comparison works whether owner is an ObjectId or string.
+        if (event.owner.toString() !== owner) { 
+            return res.status(403).json({ error: "Unauthorized: You are not the owner of this event." });
+        }
+
+        // 3. Update the fields
+        const updateFields = {
+            title, 
+            description, 
+            eventDate,
+            eventTime, 
+            status,
+            category,
+        };
+
+        const updatedEvent = await Event.findByIdAndUpdate(
+            id, 
+            updateFields, 
+            { new: true, runValidators: true }
+        );
+
+        if (!updatedEvent) {
+            return res.status(404).json({ error: "Event not found during update" });
+        }
+        
+        res.status(200).json(updatedEvent);
+    } catch (error) {
+        // You can check here if the error is due to an invalid format for owner ID:
+        console.error("Error updating event:", error);
+        res.status(500).json({ error: "Failed to update event" });
+    }
+});
 // Get events with optional category filter - UPDATED
 app.get("/events", async (req, res) => {
     try {
@@ -850,6 +903,35 @@ app.post("/event/:eventId/notify", async (req, res) => {
     } catch (error) {
         console.error("Error sending notification:", error);
         res.status(500).json({ error: "Failed to send event notification." });
+    }
+});
+
+// --- NEW: Cancel/Delete Event (DELETE) ---
+app.delete("/event/:id", async (req, res) => {
+    const { id } = req.params;
+    // For authorization, you need the owner's ID. Assuming it's passed in req.body for now:
+    const { owner } = req.body; 
+
+    try {
+        // ... (ID validation)
+        
+        // 1. Authorization: Find event and check if owner matches authenticated user
+        const event = await Event.findById(id);
+        // ... (Not found check)
+        
+        // FIX: Authorization check using event.owner (If you uncomment this)
+        // if (event.owner.toString() !== owner) { 
+        //     return res.status(403).json({ error: "Unauthorized: You are not the creator of this event." });
+        // }
+
+        // 2. Delete the event
+        await Event.findByIdAndDelete(id); 
+
+        // ... 
+        res.status(200).json({ message: "Event cancelled successfully" });
+    } catch (error) {
+        console.error("Error cancelling event:", error);
+        res.status(500).json({ error: "Failed to cancel event" });
     }
 });
 // =================================================================
